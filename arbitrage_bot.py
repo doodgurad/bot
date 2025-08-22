@@ -1,3 +1,4 @@
+110
 #!/usr/bin/env python3
 
 import sys
@@ -1030,18 +1031,6 @@ class ArbitrageBot:
         """Обрабатывает комбинации из v2_combos и находит прибыльные возможности - ОПТИМИЗИРОВАННАЯ ВЕРСИЯ"""
         opportunities = []
         
-        # Инициализация счетчиков для правильной статистики
-        self.combos_scan = 0  # Количество проверенных комбинаций
-        self.cands_scan = 0   # Количество кандидатов со спредом > MIN_SPREAD
-        self.n_low_spread = 0  # Отсеяно по спреду
-        self.n_low_liquidity_usd = 0  # Отсеяно по ликвидности
-        self.n_nets0 = 0  # Отсеяно по net_spread <= 0
-        self.n_nonv2 = 0  # Отсеяно не V2 DEX
-        self.n_low_spread_onchain = 0  # Отсеяно по onchain спреду
-        self.skip_bad_reserves_onchain = 0  # Недоступны резервы
-        self.skip_non_v2_pair = 0  # Не V2 пары
-        self.skip_ankr_rate_limit = 0  # ANKR rate limits
-        self.skip_address_mismatch = 0  # Несовпадение адресов
         
         self.logger.info(f"Обрабатываю {len(combos)} арбитражных комбинаций...")
         
@@ -1193,8 +1182,9 @@ class ArbitrageBot:
                 
                 spread = (sell_price - buy_price) / buy_price
                 
-                # Минимальный спред для анализа
-                if spread < MIN_SPREAD_PERCENT / 100:
+                # Минимальный спред для анализа (spread уже в долях, MIN_SPREAD_PERCENT в процентах)
+                spread_percent = spread * 100
+                if spread_percent < MIN_SPREAD_PERCENT:
                     self.n_low_spread = getattr(self, 'n_low_spread', 0) + 1
                     continue
                     
@@ -3130,11 +3120,19 @@ class ArbitrageBot:
         self.combos_scan = 0
         self.cands_scan = 0
         self.n_low_spread = 0
-        self.n_low_spread_onchain = 0  # НОВАЯ СТРОКА
+        self.n_low_spread_onchain = 0
+        self.n_low_liquidity_usd = 0
         self.n_nets0 = 0
         self.n_nonv2 = 0
         self.skip_bad_reserves_onchain = 0
+        self.skip_non_v2_pair = 0
+        self.skip_ankr_rate_limit = 0
+        self.skip_address_mismatch = 0
         self.all_spreads_scan = []
+        # Для find_arbitrage_opportunities
+        self.all_spreads_before_v2 = []
+        self.all_spreads_after_v2 = []
+        self.rejection_reasons = {}
         
        # Инициализируем all_pairs (будет заполнено позже)
         self.logger.info("Загружаю данные о парах...")
